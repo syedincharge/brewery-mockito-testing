@@ -8,16 +8,16 @@ import com.rizvi.mockito.brewery.services.BeerService;
 import com.rizvi.mockito.brewery.web.model.BeerDto;
 import com.rizvi.mockito.brewery.web.model.BeerPagedList;
 import com.rizvi.mockito.brewery.web.model.BeerStyleEnum;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -37,19 +37,21 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
-class BeerControllerTest {
 
-    @Mock
+
+
+@WebMvcTest(BeerController.class)
+class BeerControllerMvcTest {
+
+    @MockBean
     private BeerService beerService;
 
-    @InjectMocks
-    private BeerController beerController;
-
-    MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
     BeerDto validBeer;
 
@@ -65,23 +67,29 @@ class BeerControllerTest {
                 .createdDate(OffsetDateTime.now())
                 .lastModifiedDate(OffsetDateTime.now())
                 .build();
-        mockMvc = MockMvcBuilders.standaloneSetup(beerController)
-                .setMessageConverters(jackson2HttpMessageConverter()).build();
+
     }
+
+    @AfterEach
+    void tearDown() {
+        reset(beerService);
+    }
+
 
     @Test
     void testGetBeerById() throws Exception {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
         given(beerService.findBeerById(any())).willReturn(validBeer);
-     MvcResult result = mockMvc.perform(get("/api/v1/beer/"+validBeer.getId()))
+        MvcResult result = mockMvc.perform(get("/api/v1/beer/" + validBeer.getId()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id", is(validBeer.getId().toString())))
                 .andExpect(jsonPath("$.beerName", is("Beer1")))
-               .andExpect(jsonPath("$.createdDate", is(dateTimeFormatter.format(validBeer.getCreatedDate()))))
-           .andReturn();
+                .andExpect(jsonPath("$.createdDate", is(dateTimeFormatter.format(validBeer.getCreatedDate()))))
+                .andReturn();
         System.out.println(result.getResponse().getContentAsString());
     }
+
     @DisplayName("List Ops -")
     @Nested
     class TestListOperations {
@@ -113,9 +121,9 @@ class BeerControllerTest {
                     .lastModifiedDate(OffsetDateTime.now())
                     .build());
 
-            beerPagedList = new BeerPagedList(beers, PageRequest.of(1,1), 2L);
+            beerPagedList = new BeerPagedList(beers, PageRequest.of(1, 1), 2L);
 
-            given(beerService.listBeers(beerNameCaptor.capture(), beerStyleEnumCaptor.capture(),pageRequestCaptor.capture())).willReturn(beerPagedList);
+            given(beerService.listBeers(beerNameCaptor.capture(), beerStyleEnumCaptor.capture(), pageRequestCaptor.capture())).willReturn(beerPagedList);
 
         }
 
@@ -125,14 +133,14 @@ class BeerControllerTest {
 
             mockMvc.perform(get("/api/v1/beer")
                             .accept(MediaType.APPLICATION_JSON))
-                            .andExpect(status().isOk())
+                    .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content", hasSize(2)))
-                    .andExpect(jsonPath("$.content[0].id",is(validBeer.getId().toString())));
+                    .andExpect(jsonPath("$.content[0].id", is(validBeer.getId().toString())));
 
         }
     }
 
-    public MappingJackson2HttpMessageConverter jackson2HttpMessageConverter(){
+    public MappingJackson2HttpMessageConverter jackson2HttpMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         objectMapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, true);
@@ -140,4 +148,5 @@ class BeerControllerTest {
         objectMapper.registerModule(new JavaTimeModule());
         return new MappingJackson2HttpMessageConverter(objectMapper);
     }
+
 }
