@@ -2,6 +2,7 @@ package com.rizvi.mockito.brewery.web.controllers;
 
 import com.rizvi.mockito.brewery.services.BeerOrderService;
 import com.rizvi.mockito.brewery.web.model.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -64,6 +66,11 @@ class BeerOrderControllerTest {
 
         beerOrderPagedList = new BeerOrderPagedList(List.of(beerOrder),
                 PageRequest.of(1,1),1L);
+    }
+
+    @AfterEach
+    void tearDown() {
+        reset(beerOrderService);
     }
 
     @Test
